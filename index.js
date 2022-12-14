@@ -1,6 +1,8 @@
 'use strict';
 
 const form = document.querySelector('.form');
+const addButton = document.querySelector('.add');
+const delButton = document.querySelector('.del');
 const containerWorkouts = document.querySelector('.workouts');
 const inputType = document.querySelector('.form__input--type');
 const inputDistance = document.querySelector('.form__input--distance');
@@ -62,8 +64,10 @@ class App {
     this._getLocalStorage();
     // attach event handlers
     form.addEventListener('submit', this._newWorkout.bind(this));
+    addButton.addEventListener('click', this._newWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevationField);
     containerWorkouts.addEventListener('click', this._moveToPopup.bind(this)); 
+    delButton.addEventListener('click', this._hideForm.bind(this));
     containerWorkouts.addEventListener('click', this._toDeleteWorkout.bind(this));
     resetButton.addEventListener('click', this.modalReset.bind(this));
   }
@@ -136,10 +140,10 @@ class App {
       const cadence = +inputCadence.value;
       // Check if data is valid
       if (!validationInputs(distance, duration, cadence) || !isPositive(distance, duration, cadence)) {
-        return alert('Input has to be positive number');
+        return this.modalMissData();
       }
       workout = new Running([lat, lng], distance, duration, cadence);
-      this._initWorkout(workout);       
+      this._initWorkout(workout);    
     }
 
     // If workout cycling, create cycling object
@@ -147,7 +151,7 @@ class App {
       const elevation = +inputElevation.value;
       // Check if data is valid
       if (!validationInputs(distance, duration, elevation) || !isPositive(distance, duration)) {
-        return alert('Input has to be positive number');        
+        return this.modalMissData();     
       }
       workout = new Cycling([lat, lng], distance, duration, elevation);
       this._initWorkout(workout);      
@@ -271,31 +275,42 @@ class App {
     localStorage.removeItem('workouts');
     location.reload();
   }
-  modalReset() {
-    function modalView(question, answerYes, answerNo) {
-      return `
-        <div class="modal-layer">
-          <div class="modal-window">
-            <div class="modal-text-container">
-              <p class="modal-text">${question}</p>
-            </div>          
-            <div class="modal-buttons">
-              <button class="button-yes">${answerYes}</button>
-              <button class="button-no">${answerNo}</button>
-            </div>          
-          </div>
+  modalView(question, answerYes, answerNo) {
+    return `
+      <div class="modal-layer">
+        <div class="modal-window">
+          <div class="modal-text-container">
+            <p class="modal-text">${question}</p>
+          </div>          
+          <div class="modal-buttons">
+            <button class="button-yes">${answerYes}</button>
+            <button class="button-no">${answerNo}</button>
+          </div>          
         </div>
-      `;    
-    }
-    const modal = modalView('Are you sure?', 'Sure, yes', 'Oo, no!');
+      </div>
+    `;    
+  }
+  modalReset() {
+    const modal = this.modalView('Are you sure?', 'Sure, yes', 'Oo, no!');
     document.body.insertAdjacentHTML('afterbegin', modal); 
     document.querySelector('.button-yes').addEventListener('click', () => {
-      this.reset()
+      this.reset();
     });
     document.querySelector('.button-no').addEventListener('click', () => {
       document.body.removeChild(document.querySelector('.modal-layer'));
     });
   }  
+  modalMissData() {
+    const modal = this.modalView('Input has to be positive number. Will you input some?', 'Yes', 'Cancel all');
+    document.body.insertAdjacentHTML('afterbegin', modal); 
+    document.querySelector('.button-yes').addEventListener('click', () => {
+      document.body.removeChild(document.querySelector('.modal-layer'));
+    });
+    document.querySelector('.button-no').addEventListener('click', () => {
+      document.body.removeChild(document.querySelector('.modal-layer'));
+      inputDistance.value = inputDuration.value = inputCadence.value = "";
+    });
+  }
 }
 
 const app = new App();
